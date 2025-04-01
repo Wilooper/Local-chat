@@ -35,7 +35,8 @@ Local Chat is a Python-based chatting application that runs a server locally on 
    python app.py
    ```
 2. Open your web browser and navigate to (http://127.0.0.1:5000) to access the chat application.
-
+## How to use in Wide area network or how to chat world wide
+To chat in wide area network please use NGROK share Ngrok link to your friends and chat with them
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request for any changes.
