@@ -41,8 +41,11 @@ To use this app you just need-
 To chat in wide area network please use NGROK share Ngrok link to your friends and chat with them.
 ## Supported OS or device
 1 . Windows
+
 2 . Linux(Any)
+
 3 . MacOS
+
 4 . Android(with the help of termux also this is coded in termux)
 
 and many more you just need a device which is capable of running python
