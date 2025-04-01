@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Create Group</h2>
+<form method="post">
+  <div class="form-group">
+    <label>Group Name</label>
+    <input type="text" name="group_name" class="form-control" required>
+  </div>
+  <button class="btn btn-primary">Create</button>
+</form>
+<p><a href="{{ url_for('group_chat') }}">Back to Groups</a></p>
+{% endblock %}
