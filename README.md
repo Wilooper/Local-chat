@@ -2,7 +2,7 @@
 #  What is Local Chat Application?
 Local Chat is a Python-based chatting application that runs a server locally on the user's device. Other users on the same network can access it using their web browser to chat without any problem. The application supports group chat, private chat, file sharing, picture sharing, emojis, and music file sharing. It also includes a chat history option.
 # Why to use Local-chat?
-If you want freedom and privacy use local-chat your this dose not require any server to run you device is your server! Just open web browser and start chatting who are in your network.
+If you want freedom and privacy use local-chat  this dose not require any server to run you device is your server! Just open web browser and start chatting who are in your network.
 ## Features
 - Group Chat
 - Private Chat
