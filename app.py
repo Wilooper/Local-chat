@@ -6,7 +6,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 from flask_socketio import SocketIO, join_room, emit
 from werkzeug.security import generate_password_hash, check_password_hash
-
+print("Made by Shaurya Singh(wilooper) With Love")
+print("Use it responsbily\n""thanks")
+print("Please wait server is starting.......")
 # Create extension instances (not bound to an app yet)
 db = SQLAlchemy()
 login_manager = LoginManager()
