@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between items-center mb-3">
+  <h2 class="mb-0">Chat Window</h2>
+  <!-- Dropdown for additional options -->
+  <div class="dropdown">
+    <button class="btn btn-secondary dropdown-toggle" type="button" id="chatOptions" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      <i class="fas fa-ellipsis-v text-white"></i>
+    </button>
+    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="chatOptions">
+      <a class="dropdown-item" href="#" id="clearChatOption">Clear Chat</a>
+    </div>
+  </div>
+</div>
+
+<!-- Chat display area with fadeIn animation -->
+<div id="chat" class="border rounded p-3 mb-3" style="background: #222; overflow-y: auto; animation: fadeIn 1s ease-out;">
+  {% for message in messages %}
+    <div id="msg-{{ message.id }}" class="mb-2">
+      <small class="text-muted">[{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}]</small>
+      {% if message.filename %}
+         <a href="{{ url_for('static', filename='uploads/' ~ message.filename) }}" target="_blank" class="text-white">[File]</a>
+      {% endif %}
+      <div>{{ message.content }}</div>
+      {% if message.sender_id == current_user.id %}
+         <button class="btn btn-danger btn-sm" onclick="deleteMessage({{ message.id }})">
+           Delete
+         </button>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>
+
+<!-- Message input area -->
+<div class="d-flex items-center">
+  <!-- Upload button with paperclip icon -->
+  <button id="uploadButton" class="btn btn-secondary mr-2" title="Upload Document">
+      <i class="fas fa-paperclip text-white"></i>
+  </button>
+  <!-- Hidden file input -->
+  <input type="file" id="fileinput" style="display: none;">
+  
+  <!-- Message text input -->
+  <input type="text" id="message" class="form-control mr-2" placeholder="Type your message...">
+  
+  <!-- Send button with paper plane icon -->
+  <button id="sendButton" class="btn btn-primary" title="Send Message">
+      <i class="fas fa-paper-plane text-white"></i>
+  </button>
+</div>
+
+<!-- Hidden form for clearing chat -->
+<form id="clearChatForm" method="post" action="{{ url_for('clear_history', chat_type=chat_type, chat_id=chat_id) }}" style="display: none;"></form>
+
+<p class="mt-3"><a href="{{ url_for('dashboard') }}">Back to Dashboard</a></p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  var socket = io();
+  var room = "{{ chat_type }}_{{ chat_id }}";
+  socket.emit('join', {room: room});
+  
+  // Listen for incoming messages and append them with a fadeIn effect
+  socket.on('message', function(data) {
+      var chat = document.getElementById('chat');
+      var messageHtml = '<div id="msg-' + data.message_id + '" class="mb-2 animate__animated animate__fadeIn">';
+      messageHtml += '<small class="text-muted">' + data.username + ' [' + data.timestamp + ']</small>';
+      if (data.filename) {
+         messageHtml += ' <a href="/static/uploads/' + data.filename + '" target="_blank" class="text-white">[File]</a>';
+      }
+      messageHtml += '<div>' + data.content + '</div></div>';
+      chat.innerHTML += messageHtml;
+      chat.scrollTop = chat.scrollHeight;
+  });
+  
+  // Listen for message deletion events
+  socket.on('message_deleted', function(data) {
+      var el = document.getElementById('msg-' + data.message_id);
+      if(el) { el.remove(); }
+  });
+  
+  // Send button event: send message and optional file
+  document.getElementById('sendButton').onclick = async function(e) {
+      var msg = document.getElementById('message').value;
+      var fileInput = document.getElementById('fileinput');
+      var file = fileInput.files[0];
+      var filename = null;
+      
+      if(file) {
+          let formData = new FormData();
+          formData.append('file', file);
+          let response = await fetch("{{ url_for('upload') }}", { method: 'POST', body: formData });
+          filename = await response.text();
+          fileInput.value = '';
+          // Revert to paperclip icon after successful upload
+          document.getElementById('uploadButton').innerHTML = '<i class="fas fa-paperclip text-white"></i>';
+      }
+      
+      socket.emit('text', {
+          room: room,
+          msg: msg,
+          chat_type: "{{ chat_type }}",
+          chat_id: {{ chat_id }},
+          filename: filename
+      });
+      document.getElementById('message').value = '';
+  };
+
+  // Trigger hidden file input when upload button is clicked
+  document.getElementById('uploadButton').onclick = function() {
+      document.getElementById('fileinput').click();
+  };
+
+  // Change upload button icon to a green tick when a file is selected
+  document.getElementById('fileinput').addEventListener('change', function(e) {
+      if(this.files && this.files.length > 0) {
+          document.getElementById('uploadButton').innerHTML = '<i class="fas fa-check" style="color:green;"></i>';
+      } else {
+          document.getElementById('uploadButton').innerHTML = '<i class="fas fa-paperclip text-white"></i>';
+      }
+  });
+
+  // Function to request deletion of a message
+  function deleteMessage(messageId) {
+      socket.emit('delete_message', { message_id: messageId, room: room });
+  }
+  
+  // Clear chat option with confirmation dialog
+  document.getElementById('clearChatOption').onclick = function(e) {
+      e.preventDefault();
+      if(confirm("Are you sure you want to clear the chat? This will delete all messages for everyone.")) {
+          document.getElementById('clearChatForm').submit();
+      }
+  };
+</script>
+{% endblock %}
+  
