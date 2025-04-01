@@ -1,0 +1,17 @@
+your_project/
+  |-app.py.   (server script to run site)
+  |-chat.db  (will be created automatically)
+  |- uploads/  (folder for files)
+  |-templates/
+       |–base.html
+       |–login.html
+       |–register.html
+       |–dashboard.html
+       |–private_chat.html
+       |–group_chat.html
+       |–create_group.html
+       |–add_to_group.html
+       |–chat.html
+       |–change_password.html
+       |–profile.html
+Note- You only need to Make (app.py) file other will be created automatically
