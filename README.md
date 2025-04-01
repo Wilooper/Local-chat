@@ -48,7 +48,8 @@ To chat in wide area network please use NGROK share Ngrok link to your friends a
 
 4 . Android(with the help of termux also this is coded in termux)
 
-and many more you just need a device which is capable of running python
+and on many more devices !!
+you just need a device which is capable of running python
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request for any changes.
