@@ -23,7 +23,7 @@
           <div class="p-2 rounded" style="background: #007bff; max-width: 70%;">
             <small class="text-right text-white">
               [{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}]
-              <span>{% if message.read %}✅{% else %}🔘{% endif %}</span>
+              <span>{% if message.read %}✅{% else %}❎{% endif %}</span>
             </small>
             {% if message.filename %}
               <a href="{{ url_for('static', filename='uploads/' ~ message.filename) }}" target="_blank" class="text-white">[File]</a>
