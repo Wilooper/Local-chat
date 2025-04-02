@@ -6,10 +6,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 from flask_socketio import SocketIO, join_room, emit
 from werkzeug.security import generate_password_hash, check_password_hash
-print("Made by Shaurya Singh(wilooper) With Love")
-print("Use it responsbily\n""thanks")
-print("Please wait server is starting.......")
-# Create extension instances (not bound to an app yet)
+print("Made by Shaurya Singh(Willoper)\n","Thanks for using site! I hope you will like it and rate it on Github\n","Once Again Thanks for using")
+print("Please Wait Server is Starting........")
+# Create extension instances
 db = SQLAlchemy()
 login_manager = LoginManager()
 socketio = SocketIO(manage_session=True)
@@ -17,11 +16,10 @@ socketio = SocketIO(manage_session=True)
 def create_app():
     app = Flask(__name__)
     
-    # Basic configuration
+    # Configuration
     app.config['SECRET_KEY'] = 'secret!'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    # Save uploads in static/uploads for serving as static files
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'])
@@ -44,7 +42,6 @@ def create_app():
         username = db.Column(db.String(80), unique=True, nullable=False)
         email = db.Column(db.String(120), unique=True, nullable=False)
         password_hash = db.Column(db.String(128), nullable=False)
-        # Many-to-many relationship for contacts/friends
         chat_list = db.relationship('User', secondary=contacts,
                                     primaryjoin=(contacts.c.user_id == id),
                                     secondaryjoin=(contacts.c.contact_id == id),
@@ -53,13 +50,13 @@ def create_app():
     class Message(db.Model):
         id = db.Column(db.Integer, primary_key=True)
         sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-        # Relationship so we can easily get sender.username
         sender = db.relationship('User', foreign_keys=[sender_id])
-        receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # for private messages
-        group_id = db.Column(db.Integer, db.ForeignKey('chat_group.id'), nullable=True)  # for group messages
+        receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+        group_id = db.Column(db.Integer, db.ForeignKey('chat_group.id'), nullable=True)
         content = db.Column(db.Text, nullable=True)
         timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-        filename = db.Column(db.String(200), nullable=True)  # for uploaded files/images
+        filename = db.Column(db.String(200), nullable=True)
+        read = db.Column(db.Boolean, default=False)
 
     class ChatGroup(db.Model):
         id = db.Column(db.Integer, primary_key=True)
@@ -75,9 +72,9 @@ def create_app():
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
-
+    
     # ---------------------------
-    # Routes for Authentication & Dashboard
+    # Routes for Authentication & Profile
     # ---------------------------
     @app.route('/')
     def index():
@@ -90,7 +87,7 @@ def create_app():
             email = request.form['email']
             password = request.form['password']
             if User.query.filter_by(username=username).first():
-                flash('Username already exists.')
+                flash("Username already exists. Please choose a different username.")
                 return redirect(url_for('register'))
             uid = str(uuid.uuid4())[:8]
             new_user = User(username=username, email=email, uid=uid,
@@ -119,17 +116,17 @@ def create_app():
     def logout():
         logout_user()
         return redirect(url_for('login'))
-
+    
     @app.route('/dashboard')
     @login_required
     def dashboard():
         return render_template('dashboard.html', uid=current_user.uid)
-
+    
     @app.route('/profile')
     @login_required
     def profile():
         return render_template('profile.html', user=current_user)
-
+    
     @app.route('/change_password', methods=['GET', 'POST'])
     @login_required
     def change_password():
@@ -147,7 +144,10 @@ def create_app():
                 flash('Password updated successfully.')
                 return redirect(url_for('profile'))
         return render_template('change_password.html')
-
+    
+    # ---------------------------
+    # Private Chat & Group Chat Routes
+    # ---------------------------
     @app.route('/private_chat', methods=['GET', 'POST'])
     @login_required
     def private_chat():
@@ -162,13 +162,13 @@ def create_app():
             else:
                 flash('User not found.')
         return render_template('private_chat.html', contacts=current_user.chat_list)
-
+    
     @app.route('/group_chat')
     @login_required
     def group_chat():
         groups = current_user.groups
         return render_template('group_chat.html', groups=groups)
-
+    
     @app.route('/create_group', methods=['GET', 'POST'])
     @login_required
     def create_group():
@@ -181,7 +181,7 @@ def create_app():
             flash('Group created successfully.')
             return redirect(url_for('group_chat'))
         return render_template('create_group.html')
-
+    
     @app.route('/add_to_group/<int:group_id>', methods=['GET', 'POST'])
     @login_required
     def add_to_group(group_id):
@@ -199,7 +199,20 @@ def create_app():
             else:
                 flash('User not found or not in your chat list.')
         return render_template('add_to_group.html', group=group)
-
+    
+    # New route: Delete Group (only for group admin)
+    @app.route('/delete_group/<int:group_id>', methods=['POST'])
+    @login_required
+    def delete_group(group_id):
+        group = ChatGroup.query.get_or_404(group_id)
+        if group.admin_id != current_user.id:
+            flash("You are not authorized to delete this group.")
+            return redirect(url_for('group_chat'))
+        db.session.delete(group)
+        db.session.commit()
+        flash("Group deleted successfully.")
+        return redirect(url_for('group_chat'))
+    
     @app.route('/chat/<chat_type>/<int:chat_id>')
     @login_required
     def chat(chat_type, chat_id):
@@ -220,7 +233,7 @@ def create_app():
         else:
             flash('Invalid chat type.')
             return redirect(url_for('dashboard'))
-
+    
     @app.route('/clear_history/<chat_type>/<int:chat_id>', methods=['POST'])
     @login_required
     def clear_history(chat_type, chat_id):
@@ -235,7 +248,7 @@ def create_app():
         db.session.commit()
         flash('Chat history cleared.')
         return redirect(url_for('chat', chat_type=chat_type, chat_id=chat_id))
-
+    
     @app.route('/upload', methods=['POST'])
     @login_required
     def upload():
@@ -247,6 +260,9 @@ def create_app():
             return filename
         return ''
     
+    # ---------------------------
+    # Socket.IO Events
+    # ---------------------------
     @socketio.on('join')
     def handle_join(data):
         room = data['room']
@@ -272,7 +288,8 @@ def create_app():
              'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
              'content': msg,
              'filename': filename,
-             'message_id': message.id
+             'message_id': message.id,
+             'read': message.read
         }, room=room)
     
     @socketio.on('delete_message')
@@ -287,6 +304,22 @@ def create_app():
         else:
             emit('error', {'msg': 'You are not authorized to delete this message.'}, room=room)
     
+    # New event: Mark all messages as read in a private chat when the chat window opens
+    @socketio.on('mark_read_all')
+    def handle_mark_read_all(data):
+        room = data.get('room')
+        other_user = data.get('other_user')
+        unread_messages = Message.query.filter(
+            Message.sender_id == other_user,
+            Message.receiver_id == current_user.id,
+            Message.read == False
+        ).all()
+        for msg in unread_messages:
+            msg.read = True
+        db.session.commit()
+        # Optionally, notify the room that these messages are now read
+        emit('messages_marked_read', {'message_ids': [msg.id for msg in unread_messages]}, room=room)
+    
     return app
 
 if __name__ == '__main__':
@@ -294,3 +327,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     socketio.run(app, debug=True)
+            
